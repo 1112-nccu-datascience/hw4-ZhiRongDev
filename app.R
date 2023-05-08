@@ -1,9 +1,10 @@
 # 記得把 1111 生物資訊的 repository 設成私密
 library(shiny)
 library(ggplot2)
-library(ggvis)
 library(ggbiplot)
 library(corrplot)
+library(FactoMineR)
+library(factoextra)
 
 ui <- fluidPage(
     titlePanel("Interactive web service of PCA and CA analysis by Shinyapp"),
@@ -38,8 +39,10 @@ ui <- fluidPage(
             ),
         ),
         mainPanel(tabsetPanel(
-            tabPanel("PCA_Result: Plot",
-                     plotOutput("pca_result_plot")),
+            tabPanel("PCA",
+                     plotOutput("pca_plot")),
+            tabPanel("CA",
+                     plotOutput("ca_plot")),
             tabPanel(
                 "Raw Data",
                 h3("Summery of raw data:"),
@@ -73,6 +76,10 @@ server <- function(input, output) {
         iris[1:input$num_of_points, 5]
     })
     
+    ir.ca <- reactive({
+        CA(ir.raw_class(), graph = FALSE)    
+    })
+    
     cr <- reactive({
         cor(ir.raw_class()[1:4])
     })
@@ -97,7 +104,7 @@ server <- function(input, output) {
         )
     })
     
-    output$pca_result_plot <- renderPlot({
+    output$pca_plot <- renderPlot({
         # apply PCA - scale. = TRUE is highly advisable, but default is FALSE.
         ir.pca <- prcomp(ir.log_class(), center = TRUE, scale. = TRUE)
         g <-
@@ -115,6 +122,11 @@ server <- function(input, output) {
                       legend.position = "top")
         print(g)
     })
+    output$ca_plot <- renderPlot({
+        g <- fviz_ca_biplot(ir.ca(), repel = TRUE)
+        print(g)
+    })
+    
     output$raw_data_summary <- renderPrint({
         summary(ir.raw())
     })
