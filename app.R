@@ -1,4 +1,3 @@
-# 記得把 1111 生物資訊的 repository 設成私密
 library(shiny)
 library(ggplot2)
 library(ggbiplot)
@@ -10,7 +9,7 @@ ui <- fluidPage(
     titlePanel("PCA & CA analysis By 資碩工一 111753151 程至榮"),
     sidebarLayout(
         sidebarPanel(
-            helpText("choose how many input to do PCA:"),
+            helpText("choose how many input to explore:"),
             sliderInput(
                 "num_of_points",
                 label = "Number of points",
@@ -18,7 +17,7 @@ ui <- fluidPage(
                 max = 150,
                 value = 150
             ),
-            helpText("choose which component to show on 'PCA'"),
+            helpText("choose which component to show on PCA:"),
             selectInput(
                 "x_var",
                 label = "X Variable",
@@ -41,25 +40,27 @@ ui <- fluidPage(
         mainPanel(tabsetPanel(
             tabPanel(
                 "PCA",
-                h3("Summary of PCA (log Transformed) "),
-                verbatimTextOutput("pca_summary"),
                 h3("Biplot of PCA (log Transformed)"),
                 plotOutput("pca_biplot"),
+                h3("Scree Plot of PCA (log Transformed)"),
+                plotOutput("pca_screePlot"),
+                h3("Summary of PCA (log Transformed) "),
+                verbatimTextOutput("pca_summary"),
+                br()
             ),
             tabPanel("CA",
                      h3("Biplot of CA"),
-                     plotOutput("ca_biplot")
+                     plotOutput("ca_biplot"),
+                     h3("Scree Plot of CA"),
+                     plotOutput("ca_screePlot"),
+                     h3("Results of CA"),
+                     verbatimTextOutput("ca_result"),
+                     h3("Results of Eigenvalues / Variances"),
+                     verbatimTextOutput("ir_eigenvalue"),
+                     br()
             ),
             tabPanel(
                 "Input Data",
-                h3("Summery of raw data:"),
-                verbatimTextOutput("raw_data_summary"),
-                h3("Correlations of raw data:"),
-                plotOutput("raw_data_correlation"),
-                h3("Summery of log data:"),
-                verbatimTextOutput("log_data_summary"),
-                h3("Correlations of log data:"),
-                plotOutput("log_data_correlation"),
                 h3("Data Table"),
                 tabsetPanel(
                     tabPanel(
@@ -71,15 +72,16 @@ ui <- fluidPage(
                         DT::dataTableOutput("log_table")
                     )
                 ),
+                h3("Summery of raw data:"),
+                verbatimTextOutput("raw_data_summary"),
+                h3("Correlations of raw data:"),
+                plotOutput("raw_data_correlation"),
+                h3("Summery of log data:"),
+                verbatimTextOutput("log_data_summary"),
+                h3("Correlations of log data:"),
+                plotOutput("log_data_correlation"),
                 br()
             ),
-            tabPanel(
-                "Debug",
-                h3("raw"),
-                verbatimTextOutput("debug_raw"),
-                h3("log"),
-                verbatimTextOutput("debug_log"),
-            )
         ),)
     )
 )
@@ -145,6 +147,10 @@ server <- function(input, output) {
         print(g)
     })
     
+    output$pca_screePlot <- renderPlot({
+        fviz_screeplot(ir.pca())
+    })
+    
     output$pca_summary <- renderPrint({
         ir.pca()
     })
@@ -152,6 +158,18 @@ server <- function(input, output) {
     output$ca_biplot <- renderPlot({
         g <- fviz_ca_biplot(ir.ca(), repel = TRUE)
         print(g)
+    })
+    
+    output$ca_screePlot <- renderPlot({
+        fviz_screeplot(ir.ca())
+    })
+    
+    output$ca_result <- renderPrint({
+        print(ir.ca())
+    })
+    
+    output$ir_eigenvalue <- renderPrint({
+        print(get_eigenvalue(ir.ca()))
     })
     
     output$raw_data_summary <- renderPrint({
@@ -170,14 +188,6 @@ server <- function(input, output) {
     output$log_data_correlation <- renderPlot({
         cr <- cor(ir.log()[, 1:4])
         corrplot(cr, method = "color")
-    })
-    
-    output$debug_raw <- renderPrint({
-        ir.raw()
-    })
-    
-    output$debug_log <- renderPrint({
-        ir.log()
     })
     
     output$raw_table <- DT::renderDataTable({
